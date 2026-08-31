@@ -10,7 +10,7 @@ Built for the Moveo coding assignment.
 - **Backend:** Node.js + Express
 - **Database:** SQLite (via `better-sqlite3`)
 - **Auth:** JWT (email + password, bcrypt-hashed)
-- **External APIs:** CoinGecko (prices, no key needed), CryptoPanic (news, optional key), OpenRouter (AI insight, optional key)
+- **External APIs:** CoinGecko (prices, free, no key needed), static fallback content (news, per assignment's "CryptoPanic API or static fallback" option — CryptoPanic's API is not free, so a curated static list is used instead), OpenRouter (AI insight, free tier, optional key)
 
 ## Project structure
 
@@ -50,7 +50,8 @@ Open `http://localhost:5173`, register an account, complete onboarding, and view
 | `PORT` | no | API port, defaults to 4000 |
 | `JWT_SECRET` | yes | Secret used to sign JWTs |
 | `OPENROUTER_API_KEY` | no | Free key from [openrouter.ai](https://openrouter.ai) for real AI-generated insights. Without it, a templated fallback insight is used. |
-| `CRYPTOPANIC_API_KEY` | no | Free key from [cryptopanic.com](https://cryptopanic.com) for live news. Without it, a static fallback news list is used. |
+
+Market news uses a static curated list rather than a live API. CryptoPanic (the API suggested in the assignment) does not offer a free tier, so per the assignment's explicit "CryptoPanic API **or** static fallback" allowance, this project only uses the free path.
 
 ### `client/.env`
 
