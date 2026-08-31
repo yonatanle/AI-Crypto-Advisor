@@ -1,3 +1,5 @@
+const fetch = require("node-fetch");
+
 const STATIC_NEWS = [
   {
     id: "static-1",
@@ -44,7 +46,33 @@ const STATIC_NEWS = [
 ];
 
 async function getMarketNews() {
-  return STATIC_NEWS;
+  const apiKey = process.env.NEWSDATA_API_KEY;
+  if (!apiKey) return STATIC_NEWS;
+
+  try {
+    const url = `https://newsdata.io/api/1/crypto?apikey=${apiKey}&language=en`;
+    const resp = await fetch(url, { timeout: 8000 });
+    if (!resp.ok) throw new Error(`NewsData.io error ${resp.status}`);
+    const data = await resp.json();
+
+    const isLikelyEnglish = (text) => /^[\x00-\x7F\s]*$/.test(text || "");
+
+    const results = (data.results || [])
+      .filter((article) => isLikelyEnglish(article.title))
+      .slice(0, 6)
+      .map((article, i) => ({
+        id: article.article_id || `newsdata-${i}`,
+        title: article.title,
+        url: article.link,
+        source: article.source_id || article.source_name || "NewsData.io",
+        publishedAt: article.pubDate || new Date().toISOString(),
+      }));
+
+    return results.length ? results : STATIC_NEWS;
+  } catch (err) {
+    console.error("NewsData.io fetch failed, using static fallback:", err.message);
+    return STATIC_NEWS;
+  }
 }
 
 module.exports = { getMarketNews };
