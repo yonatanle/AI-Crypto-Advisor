@@ -107,6 +107,17 @@ The `votes` table already captures `(user_id, section, item_key, vote, created_a
 - **Market news isn't personalized.** `getMarketNews()` fetches one generic feed for every user, ignoring their onboarding `assets`/`investorType`/`contentTypes` — unlike coin prices and the AI insight, which are already filtered per user. A fix: query NewsData.io with the user's selected assets as keywords/categories, or rank the fetched articles by relevance to the user's preferences before returning them.
 - **Meme voting produces no usable signal.** `getRandomMeme()` returns a different random meme (or random Reddit post) on every dashboard load, so a given meme is almost never shown to the same user twice — votes are one-off and never accumulate per item, making the vote history for this section useless for training or ranking. A fix: pick one meme per day (deterministically, like the AI insight's `insight-YYYY-MM-DD` id) so repeat votes on the same day's meme are meaningful, or maintain a rotating pool of memes voted on across users to build real per-item signal.
 
+## Known limitations
+
+Deliberate scope cuts for an assignment of this size — called out explicitly rather than left implicit:
+
+- **No automated tests.** Correctness was verified manually (curl against every endpoint, a full register→onboarding→dashboard→vote browser run, a production frontend build) rather than with an automated suite. For a longer-lived project this should be backed by integration tests for the auth/preferences/dashboard/votes routes.
+- **No CI or containerization.** No GitHub Actions workflow, no Dockerfile. Nothing currently gates a broken commit before it reaches `main`.
+- **Deployment is prose-only.** The README describes deploying to Vercel/Render but the repo has no `vercel.json`, `render.yaml`, or platform-specific build config committed yet — deployment hasn't been executed.
+- **No DB migrations.** The schema is created via `CREATE TABLE IF NOT EXISTS` in `server/src/db/index.js` at startup. Fine at 3 tables and this scale, but any future schema change (e.g. adding a column) has no migration path and would need to be handled manually.
+- **Open CORS, no rate limiting or input validation middleware.** The API allows all origins (`cors()` with defaults) and has no rate limiting on `/auth/login` or `/auth/register`, no request validation library — just ad hoc checks in route handlers. Acceptable for a graded/demo app, not for a real multi-user deployment.
+- **No frontend state management library.** Auth state is a single React Context; page-local state uses `useState`. Reasonable for 4 pages, but would need something like Zustand or Redux if the app grew significantly.
+
 ## AI tool usage summary
 
 This project was built with Claude Code (Anthropic's CLI coding agent). Summary of the collaboration:
