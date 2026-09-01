@@ -28,6 +28,9 @@ const STATIC_MEMES = [
   },
 ];
 
+// Hashes today's date into a stable index so every user sees the same
+// meme all day (and can meaningfully vote on it), without persisting
+// which meme "today's" pick is anywhere.
 function getStaticDailyMeme() {
   const dayIndex = new Date().toISOString().slice(0, 10);
   let hash = 0;

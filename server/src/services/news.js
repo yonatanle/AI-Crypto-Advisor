@@ -55,6 +55,8 @@ async function getMarketNews() {
     if (!resp.ok) throw new Error(`NewsData.io error ${resp.status}`);
     const data = await resp.json();
 
+    // NewsData's language=en filter still lets non-English titles through
+    // occasionally; this ASCII check is a cheap second pass to catch them.
     const isLikelyEnglish = (text) => /^[\x00-\x7F\s]*$/.test(text || "");
 
     const results = (data.results || [])

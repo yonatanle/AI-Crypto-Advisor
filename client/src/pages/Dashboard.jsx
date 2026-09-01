@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../api/client";
 import { VoteButtons } from "../components/VoteButtons";
+import { SECTIONS } from "../constants";
 
 export function Dashboard() {
   const { token, user, logout } = useAuth();
@@ -83,7 +84,7 @@ export function Dashboard() {
                   <span className="muted">{item.source}</span>
                   <VoteButtons
                     userVote={item.userVote}
-                    onVote={(vote) => handleVote("marketNews", item.id, vote)}
+                    onVote={(vote) => handleVote(SECTIONS.MARKET_NEWS, item.id, vote)}
                   />
                 </div>
               </li>
@@ -107,7 +108,7 @@ export function Dashboard() {
                 </div>
                 <VoteButtons
                   userVote={coin.userVote}
-                  onVote={(vote) => handleVote("coinPrices", coin.id, vote)}
+                  onVote={(vote) => handleVote(SECTIONS.COIN_PRICES, coin.id, vote)}
                 />
               </li>
             ))}
@@ -123,7 +124,7 @@ export function Dashboard() {
             </span>
             <VoteButtons
               userVote={sections.aiInsight.userVote}
-              onVote={(vote) => handleVote("aiInsight", sections.aiInsight.id, vote)}
+              onVote={(vote) => handleVote(SECTIONS.AI_INSIGHT, sections.aiInsight.id, vote)}
             />
           </div>
         </section>
@@ -135,7 +136,7 @@ export function Dashboard() {
             <span className="muted">{sections.meme.caption}</span>
             <VoteButtons
               userVote={sections.meme.userVote}
-              onVote={(vote) => handleVote("meme", sections.meme.id, vote)}
+              onVote={(vote) => handleVote(SECTIONS.MEME, sections.meme.id, vote)}
             />
           </div>
         </section>

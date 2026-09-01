@@ -1,5 +1,8 @@
 const fetch = require("node-fetch");
 
+// CoinGecko's price endpoint keys results by its own slug ids, not ticker
+// symbols (e.g. "bitcoin", not "BTC") — this maps the symbols collected
+// during onboarding to the ids the API expects, and back again for display.
 const SYMBOL_TO_ID = {
   BTC: "bitcoin",
   ETH: "ethereum",

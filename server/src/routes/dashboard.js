@@ -5,6 +5,7 @@ const { getCoinPrices } = require("../services/coingecko");
 const { getMarketNews } = require("../services/news");
 const { getAiInsight } = require("../services/aiInsight");
 const { getRandomMeme } = require("../services/memes");
+const { SECTIONS } = require("../constants");
 
 const router = express.Router();
 
@@ -35,15 +36,17 @@ router.get("/", requireAuth, async (req, res) => {
     getRandomMeme(),
   ]);
 
+  // Dated id (not a UUID per call) so repeat votes on today's insight land
+  // on the same row instead of each dashboard load creating a new item.
   const insightItem = { id: `insight-${new Date().toISOString().slice(0, 10)}`, ...insight };
 
   res.json({
     preferences,
     sections: {
-      marketNews: attachVotes(req.user.id, "marketNews", news),
-      coinPrices: attachVotes(req.user.id, "coinPrices", prices.map((p) => ({ id: p.id, ...p }))),
-      aiInsight: attachVotes(req.user.id, "aiInsight", [insightItem])[0],
-      meme: attachVotes(req.user.id, "meme", [meme])[0],
+      marketNews: attachVotes(req.user.id, SECTIONS.MARKET_NEWS, news),
+      coinPrices: attachVotes(req.user.id, SECTIONS.COIN_PRICES, prices.map((p) => ({ id: p.id, ...p }))),
+      aiInsight: attachVotes(req.user.id, SECTIONS.AI_INSIGHT, [insightItem])[0],
+      meme: attachVotes(req.user.id, SECTIONS.MEME, [meme])[0],
     },
   });
 });
