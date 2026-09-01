@@ -86,7 +86,7 @@ Tables: `users`, `preferences`, `votes`.
 ## Deployment
 
 - **Frontend:** deploy `client/` to Vercel or Netlify. Set `VITE_API_URL` to the deployed backend URL.
-- **Backend:** deploy `server/` to Render or Railway. Set `JWT_SECRET` and optionally `OPENROUTER_API_KEY` / `CRYPTOPANIC_API_KEY` as environment variables. Note: SQLite persists to local disk — on Render use a persistent disk, or swap in Postgres for production durability.
+- **Backend:** deploy `server/` to Render or Railway. Set `JWT_SECRET` and optionally `OPENROUTER_API_KEY` / `NEWSDATA_API_KEY` as environment variables. Note: SQLite persists to local disk — on Render use a persistent disk, or swap in Postgres for production durability.
 
 Deployed app URL: _TODO after deployment_
 GitHub repo: _TODO_
@@ -108,6 +108,6 @@ This project was built with Claude Code (Anthropic's CLI coding agent). Summary 
 
 - Provided the assignment PDF; Claude read and extracted the requirements (auth, onboarding, 4-section dashboard, voting, deployment, deliverables).
 - Discussed and chose the stack (React + Node/Express + SQLite) and AI provider (OpenRouter) interactively before any code was written.
-- Claude scaffolded the full backend (Express routes for auth/preferences/dashboard/votes, SQLite schema, JWT middleware, and service modules for CoinGecko/CryptoPanic/OpenRouter/memes with graceful fallbacks when API keys are absent) and the full frontend (React Router pages for login/register/onboarding/dashboard, auth context, API client, styling).
+- Claude scaffolded the full backend (Express routes for auth/preferences/dashboard/votes, SQLite schema, JWT middleware, and service modules for CoinGecko/NewsData.io/OpenRouter/meme-api.com with graceful fallbacks when API keys are absent or calls fail) and the full frontend (React Router pages for login/register/onboarding/dashboard, auth context, API client, styling).
 - Claude ran the backend and frontend locally, smoke-tested every API endpoint via curl (register, login, preferences, dashboard, voting) and verified a clean production build of the frontend.
 - All architectural and product decisions (fallback behavior, DB schema, route design) were made by Claude within the constraints given by the user; the user reviewed and steered scope via direct questions rather than reviewing code line-by-line during generation.
