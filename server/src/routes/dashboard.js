@@ -28,13 +28,13 @@ router.get("/", requireAuth, async (req, res) => {
     contentTypes: JSON.parse(prefRow.content_types),
   };
 
-  const [news, prices, insight] = await Promise.all([
+  const [news, prices, insight, meme] = await Promise.all([
     getMarketNews(),
     getCoinPrices(preferences.assets),
     getAiInsight(preferences),
+    getRandomMeme(),
   ]);
 
-  const meme = getRandomMeme();
   const insightItem = { id: `insight-${new Date().toISOString().slice(0, 10)}`, ...insight };
 
   res.json({

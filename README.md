@@ -10,7 +10,7 @@ Built for the Moveo coding assignment.
 - **Backend:** Node.js + Express
 - **Database:** SQLite (via `better-sqlite3`)
 - **Auth:** JWT (email + password, bcrypt-hashed)
-- **External APIs:** CoinGecko (prices, free, no key needed), NewsData.io (news, free tier, optional key — CryptoPanic was considered but its API is not free), OpenRouter (AI insight, free tier, optional key)
+- **External APIs:** CoinGecko (prices, free, no key needed), NewsData.io (news, free tier, optional key — CryptoPanic was considered but its API is not free), OpenRouter (AI insight, free tier, optional key), meme-api.com (memes, free, no key needed — pulls from crypto meme subreddits)
 
 ## Project structure
 

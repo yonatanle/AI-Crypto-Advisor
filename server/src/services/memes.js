@@ -1,3 +1,5 @@
+const fetch = require("node-fetch");
+
 const STATIC_MEMES = [
   {
     id: "meme-1",
@@ -26,16 +28,33 @@ const STATIC_MEMES = [
   },
 ];
 
-function getDailyMeme() {
+function getStaticDailyMeme() {
   const dayIndex = new Date().toISOString().slice(0, 10);
   let hash = 0;
   for (let i = 0; i < dayIndex.length; i++) hash = (hash * 31 + dayIndex.charCodeAt(i)) >>> 0;
-  const meme = STATIC_MEMES[hash % STATIC_MEMES.length];
-  return meme;
+  return STATIC_MEMES[hash % STATIC_MEMES.length];
 }
 
-function getRandomMeme() {
+function getStaticRandomMeme() {
   return STATIC_MEMES[Math.floor(Math.random() * STATIC_MEMES.length)];
 }
 
-module.exports = { getDailyMeme, getRandomMeme };
+async function getRandomMeme() {
+  try {
+    const resp = await fetch("https://meme-api.com/gimme/cryptocurrencymemes", { timeout: 8000 });
+    if (!resp.ok) throw new Error(`meme-api error ${resp.status}`);
+    const data = await resp.json();
+    if (!data.url || data.nsfw) throw new Error("invalid or nsfw meme response");
+
+    return {
+      id: data.postLink || `meme-api-${Date.now()}`,
+      url: data.url,
+      caption: data.title || "Crypto meme of the day",
+    };
+  } catch (err) {
+    console.error("meme-api fetch failed, using static fallback:", err.message);
+    return getStaticRandomMeme();
+  }
+}
+
+module.exports = { getRandomMeme, getStaticDailyMeme };
