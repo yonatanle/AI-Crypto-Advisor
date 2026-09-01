@@ -102,6 +102,11 @@ The `votes` table already captures `(user_id, section, item_key, vote, created_a
 5. **Feedback loop cadence.** Periodically (e.g. weekly) export votes to a training pipeline; retrain/update prompt templates or a small ranking model; deploy; monitor thumbs-up rate as the core offline/online metric.
 6. **Extending to news/memes.** The same vote table can train a content recommender (e.g. collaborative filtering on which news sources/meme styles get upvoted per user) to reorder future content, not just judge the AI insight.
 
+## Possible improvements
+
+- **Market news isn't personalized.** `getMarketNews()` fetches one generic feed for every user, ignoring their onboarding `assets`/`investorType`/`contentTypes` — unlike coin prices and the AI insight, which are already filtered per user. A fix: query NewsData.io with the user's selected assets as keywords/categories, or rank the fetched articles by relevance to the user's preferences before returning them.
+- **Meme voting produces no usable signal.** `getRandomMeme()` returns a different random meme (or random Reddit post) on every dashboard load, so a given meme is almost never shown to the same user twice — votes are one-off and never accumulate per item, making the vote history for this section useless for training or ranking. A fix: pick one meme per day (deterministically, like the AI insight's `insight-YYYY-MM-DD` id) so repeat votes on the same day's meme are meaningful, or maintain a rotating pool of memes voted on across users to build real per-item signal.
+
 ## AI tool usage summary
 
 This project was built with Claude Code (Anthropic's CLI coding agent). Summary of the collaboration:
