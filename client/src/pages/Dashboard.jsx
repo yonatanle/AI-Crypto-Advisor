@@ -10,6 +10,7 @@ export function Dashboard() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [memeIndex, setMemeIndex] = useState(0);
   const navigate = useNavigate();
 
   const load = useCallback(async () => {
@@ -130,19 +131,38 @@ export function Dashboard() {
         </section>
 
         <section className="card">
-          <h2>😂 Fun Crypto Memes</h2>
-          {sections.meme.map((item) => (
-            <div className="meme-item" key={item.id}>
-              <img className="meme-image" src={item.url} alt={item.caption} />
-              <div className="item-footer">
-                <span className="muted">{item.caption}</span>
-                <VoteButtons
-                  userVote={item.userVote}
-                  onVote={(vote) => handleVote(SECTIONS.MEME, item.id, vote)}
-                />
+          <h2>😂 Fun Crypto Meme</h2>
+          {(() => {
+            const memes = sections.meme;
+            const item = memes[memeIndex] ?? memes[0];
+            return (
+              <div className="meme-item">
+                <img className="meme-image" src={item.url} alt={item.caption} />
+                <div className="item-footer">
+                  <span className="muted">{item.caption}</span>
+                  <VoteButtons
+                    userVote={item.userVote}
+                    onVote={(vote) => handleVote(SECTIONS.MEME, item.id, vote)}
+                  />
+                </div>
+                <div className="meme-nav">
+                  <button
+                    className="secondary"
+                    onClick={() => setMemeIndex((i) => (i - 1 + memes.length) % memes.length)}
+                  >
+                    ← Prev
+                  </button>
+                  <span className="muted">{memeIndex + 1} / {memes.length}</span>
+                  <button
+                    className="secondary"
+                    onClick={() => setMemeIndex((i) => (i + 1) % memes.length)}
+                  >
+                    Next →
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })()}
         </section>
       </div>
     </div>
