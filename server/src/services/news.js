@@ -45,12 +45,15 @@ const STATIC_NEWS = [
   },
 ];
 
-async function getMarketNews() {
+async function getMarketNews(assets) {
   const apiKey = process.env.NEWSDATA_API_KEY;
   if (!apiKey) return STATIC_NEWS;
 
   try {
-    const url = `https://newsdata.io/api/1/crypto?apikey=${apiKey}&language=en`;
+    // Narrows results to the user's onboarding assets when available;
+    // falls back to unfiltered crypto news otherwise (e.g. no assets picked).
+    const query = assets && assets.length ? `&q=${encodeURIComponent(assets.join(" OR "))}` : "";
+    const url = `https://newsdata.io/api/1/crypto?apikey=${apiKey}&language=en${query}`;
     const resp = await fetch(url, { timeout: 8000 });
     if (!resp.ok) throw new Error(`NewsData.io error ${resp.status}`);
     const data = await resp.json();
@@ -69,6 +72,29 @@ async function getMarketNews() {
         source: article.source_id || article.source_name || "NewsData.io",
         publishedAt: article.pubDate || new Date().toISOString(),
       }));
+
+    // An asset-filtered query can legitimately return zero results (e.g. a
+    // low-coverage coin); retry once unfiltered rather than falling back to
+    // static news, which would be a worse user experience than generic live news.
+    if (!results.length && query) {
+      const fallbackResp = await fetch(`https://newsdata.io/api/1/crypto?apikey=${apiKey}&language=en`, {
+        timeout: 8000,
+      });
+      if (fallbackResp.ok) {
+        const fallbackData = await fallbackResp.json();
+        const fallbackResults = (fallbackData.results || [])
+          .filter((article) => isLikelyEnglish(article.title))
+          .slice(0, 6)
+          .map((article, i) => ({
+            id: article.article_id || `newsdata-${i}`,
+            title: article.title,
+            url: article.link,
+            source: article.source_id || article.source_name || "NewsData.io",
+            publishedAt: article.pubDate || new Date().toISOString(),
+          }));
+        return fallbackResults.length ? fallbackResults : STATIC_NEWS;
+      }
+    }
 
     return results.length ? results : STATIC_NEWS;
   } catch (err) {

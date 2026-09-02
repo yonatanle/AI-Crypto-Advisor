@@ -104,7 +104,7 @@ The `votes` table already captures `(user_id, section, item_key, vote, created_a
 
 ## Possible improvements
 
-- **Market news isn't personalized.** `getMarketNews()` fetches one generic feed for every user, ignoring their onboarding `assets`/`investorType`/`contentTypes` — unlike coin prices and the AI insight, which are already filtered per user. A fix: query NewsData.io with the user's selected assets as keywords/categories, or rank the fetched articles by relevance to the user's preferences before returning them.
+- **Market news is now filtered by asset, but not by investor type/content preference.** `getMarketNews()` queries NewsData.io with the user's onboarding `assets` as keywords (falling back to the unfiltered feed if that query returns nothing), so news is asset-personalized. `investorType`/`contentTypes` are still unused for news — a further fix would map content types to NewsData's `category` param or re-rank results client-side.
 - **Meme voting produces no usable signal.** `getRandomMeme()` returns a different random meme (or random Reddit post) on every dashboard load, so a given meme is almost never shown to the same user twice — votes are one-off and never accumulate per item, making the vote history for this section useless for training or ranking. A fix: pick one meme per day (deterministically, like the AI insight's `insight-YYYY-MM-DD` id) so repeat votes on the same day's meme are meaningful, or maintain a rotating pool of memes voted on across users to build real per-item signal.
 
 ## Known limitations

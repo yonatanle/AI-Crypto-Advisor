@@ -30,7 +30,7 @@ router.get("/", requireAuth, async (req, res) => {
   };
 
   const [news, prices, insight, meme] = await Promise.all([
-    getMarketNews(),
+    getMarketNews(preferences.assets),
     getCoinPrices(preferences.assets),
     getAiInsight(preferences),
     getRandomMeme(),
