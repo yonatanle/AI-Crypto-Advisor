@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../api/client";
 import { VoteButtons } from "../components/VoteButtons";
+import { SectionCard } from "../components/SectionCard";
 import { SECTIONS } from "../constants";
 
 export function Dashboard() {
@@ -74,8 +75,7 @@ export function Dashboard() {
       </header>
 
       <div className="dashboard-grid">
-        <section className="card">
-          <h2>📰 Market News</h2>
+        <SectionCard title="📰 Market News">
           <ul className="news-list">
             {sections.marketNews.map((item) => (
               <li key={item.id}>
@@ -90,10 +90,9 @@ export function Dashboard() {
               </li>
             ))}
           </ul>
-        </section>
+        </SectionCard>
 
-        <section className="card">
-          <h2>💰 Coin Prices</h2>
+        <SectionCard title="💰 Coin Prices">
           <ul className="price-list">
             {sections.coinPrices.map((coin) => (
               <li key={coin.id}>
@@ -113,10 +112,9 @@ export function Dashboard() {
               </li>
             ))}
           </ul>
-        </section>
+        </SectionCard>
 
-        <section className="card">
-          <h2>🤖 AI Insight of the Day</h2>
+        <SectionCard title="🤖 AI Insight of the Day">
           <p className="insight-text">{sections.aiInsight.text}</p>
           <div className="item-footer">
             <span className="muted">
@@ -127,10 +125,9 @@ export function Dashboard() {
               onVote={(vote) => handleVote(SECTIONS.AI_INSIGHT, sections.aiInsight.id, vote)}
             />
           </div>
-        </section>
+        </SectionCard>
 
-        <section className="card">
-          <h2>😂 Fun Crypto Meme</h2>
+        <SectionCard title="😂 Fun Crypto Meme">
           <img className="meme-image" src={sections.meme.url} alt={sections.meme.caption} />
           <div className="item-footer">
             <span className="muted">{sections.meme.caption}</span>
@@ -139,7 +136,7 @@ export function Dashboard() {
               onVote={(vote) => handleVote(SECTIONS.MEME, sections.meme.id, vote)}
             />
           </div>
-        </section>
+        </SectionCard>
       </div>
     </div>
   );
