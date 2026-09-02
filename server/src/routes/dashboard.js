@@ -40,13 +40,18 @@ router.get("/", requireAuth, async (req, res) => {
   // on the same row instead of each dashboard load creating a new item.
   const insightItem = { id: `insight-${new Date().toISOString().slice(0, 10)}`, ...insight };
 
+  // The assignment calls for a single meme shown dynamically on each dashboard
+  // update, not a fixed set — so pick one of today's pool at random per request.
+  // The pool itself is still shared/persisted so repeat picks can accumulate votes.
+  const meme = memes[Math.floor(Math.random() * memes.length)];
+
   res.json({
     preferences,
     sections: {
       marketNews: attachVotes(req.user.id, SECTIONS.MARKET_NEWS, news),
       coinPrices: attachVotes(req.user.id, SECTIONS.COIN_PRICES, prices.map((p) => ({ id: p.id, ...p }))),
       aiInsight: attachVotes(req.user.id, SECTIONS.AI_INSIGHT, [insightItem])[0],
-      meme: attachVotes(req.user.id, SECTIONS.MEME, memes),
+      meme: attachVotes(req.user.id, SECTIONS.MEME, [meme])[0],
     },
   });
 });

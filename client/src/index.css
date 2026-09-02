@@ -266,13 +266,6 @@ legend {
   margin-bottom: 8px;
 }
 
-.meme-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 12px;
-}
-
 .vote-buttons {
   display: flex;
   gap: 6px;
