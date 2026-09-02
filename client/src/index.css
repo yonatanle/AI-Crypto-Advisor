@@ -259,6 +259,12 @@ legend {
   line-height: 1.5;
 }
 
+.meme-item + .meme-item {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border, #e5e5e5);
+}
+
 .meme-image {
   width: 100%;
   border-radius: 12px;

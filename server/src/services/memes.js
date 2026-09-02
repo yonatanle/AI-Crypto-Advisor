@@ -1,4 +1,7 @@
 const fetch = require("node-fetch");
+const db = require("../db");
+
+const DAILY_MEME_COUNT = 3;
 
 const STATIC_MEMES = [
   {
@@ -28,36 +31,59 @@ const STATIC_MEMES = [
   },
 ];
 
-// Hashes today's date into a stable index so every user sees the same
-// meme all day (and can meaningfully vote on it), without persisting
-// which meme "today's" pick is anywhere.
-function getStaticDailyMeme() {
+// Picks DAILY_MEME_COUNT distinct static memes deterministically from
+// today's date, so the fallback set is stable across a day without needing
+// its own persistence.
+function getStaticDailyMemeSet() {
   const dayIndex = new Date().toISOString().slice(0, 10);
   let hash = 0;
   for (let i = 0; i < dayIndex.length; i++) hash = (hash * 31 + dayIndex.charCodeAt(i)) >>> 0;
-  return STATIC_MEMES[hash % STATIC_MEMES.length];
+  const picks = [];
+  for (let i = 0; i < DAILY_MEME_COUNT && i < STATIC_MEMES.length; i++) {
+    picks.push(STATIC_MEMES[(hash + i) % STATIC_MEMES.length]);
+  }
+  return picks;
 }
 
-function getStaticRandomMeme() {
-  return STATIC_MEMES[Math.floor(Math.random() * STATIC_MEMES.length)];
+async function fetchLiveMemeSet() {
+  const resp = await fetch(`https://meme-api.com/gimme/cryptocurrencymemes/${DAILY_MEME_COUNT}`, {
+    timeout: 8000,
+  });
+  if (!resp.ok) throw new Error(`meme-api error ${resp.status}`);
+  const data = await resp.json();
+  const memes = (data.memes || []).filter((m) => m.url && !m.nsfw);
+  if (!memes.length) throw new Error("no valid memes in meme-api response");
+
+  return memes.slice(0, DAILY_MEME_COUNT).map((m) => ({
+    id: m.postLink || `meme-api-${Date.now()}-${Math.random()}`,
+    url: m.url,
+    caption: m.title || "Crypto meme of the day",
+  }));
 }
 
-async function getRandomMeme() {
+// Persists the day's meme picks in SQLite (rather than in-memory) so every
+// user sees the same set and votes stay meaningful across server restarts.
+async function getDailyMemes() {
+  const day = new Date().toISOString().slice(0, 10);
+
+  const existing = db.prepare("SELECT idx, id, url, caption FROM daily_memes WHERE day = ? ORDER BY idx").all(day);
+  if (existing.length) return existing.map(({ id, url, caption }) => ({ id, url, caption }));
+
+  let memes;
   try {
-    const resp = await fetch("https://meme-api.com/gimme/cryptocurrencymemes", { timeout: 8000 });
-    if (!resp.ok) throw new Error(`meme-api error ${resp.status}`);
-    const data = await resp.json();
-    if (!data.url || data.nsfw) throw new Error("invalid or nsfw meme response");
-
-    return {
-      id: data.postLink || `meme-api-${Date.now()}`,
-      url: data.url,
-      caption: data.title || "Crypto meme of the day",
-    };
+    memes = await fetchLiveMemeSet();
   } catch (err) {
     console.error("meme-api fetch failed, using static fallback:", err.message);
-    return getStaticRandomMeme();
+    memes = getStaticDailyMemeSet();
   }
+
+  const insert = db.prepare("INSERT OR IGNORE INTO daily_memes (day, idx, id, url, caption) VALUES (?, ?, ?, ?, ?)");
+  const insertAll = db.transaction((items) => {
+    items.forEach((m, idx) => insert.run(day, idx, m.id, m.url, m.caption));
+  });
+  insertAll(memes);
+
+  return memes;
 }
 
-module.exports = { getRandomMeme, getStaticDailyMeme };
+module.exports = { getDailyMemes };

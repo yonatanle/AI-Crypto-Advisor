@@ -130,15 +130,19 @@ export function Dashboard() {
         </section>
 
         <section className="card">
-          <h2>😂 Fun Crypto Meme</h2>
-          <img className="meme-image" src={sections.meme.url} alt={sections.meme.caption} />
-          <div className="item-footer">
-            <span className="muted">{sections.meme.caption}</span>
-            <VoteButtons
-              userVote={sections.meme.userVote}
-              onVote={(vote) => handleVote(SECTIONS.MEME, sections.meme.id, vote)}
-            />
-          </div>
+          <h2>😂 Fun Crypto Memes</h2>
+          {sections.meme.map((item) => (
+            <div className="meme-item" key={item.id}>
+              <img className="meme-image" src={item.url} alt={item.caption} />
+              <div className="item-footer">
+                <span className="muted">{item.caption}</span>
+                <VoteButtons
+                  userVote={item.userVote}
+                  onVote={(vote) => handleVote(SECTIONS.MEME, item.id, vote)}
+                />
+              </div>
+            </div>
+          ))}
         </section>
       </div>
     </div>

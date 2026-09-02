@@ -1,6 +1,6 @@
 # AI Crypto Advisor
 
-A personalized crypto investor dashboard: users sign up, complete a short onboarding quiz, and get a daily dashboard with market news, live coin prices, an AI-generated market insight, and a fun meme — each with thumbs up/down voting.
+A personalized crypto investor dashboard: users sign up, complete a short onboarding quiz, and get a daily dashboard with market news, live coin prices, an AI-generated market insight, and a set of fun memes — each with thumbs up/down voting.
 
 Built for the Moveo coding assignment.
 
@@ -79,9 +79,10 @@ sqlite3 server/data/app.sqlite
 select * from users;
 select * from preferences;
 select * from votes;
+select * from daily_memes;
 ```
 
-Tables: `users`, `preferences`, `votes`.
+Tables: `users`, `preferences`, `votes`, `daily_memes`.
 
 ## Deployment
 
@@ -105,7 +106,7 @@ The `votes` table already captures `(user_id, section, item_key, vote, created_a
 ## Possible improvements
 
 - **Market news is now filtered by asset, but not by investor type/content preference.** `getMarketNews()` queries NewsData.io with the user's onboarding `assets` as keywords (falling back to the unfiltered feed if that query returns nothing), so news is asset-personalized. `investorType`/`contentTypes` are still unused for news — a further fix would map content types to NewsData's `category` param or re-rank results client-side.
-- **Meme voting produces no usable signal.** `getRandomMeme()` returns a different random meme (or random Reddit post) on every dashboard load, so a given meme is almost never shown to the same user twice — votes are one-off and never accumulate per item, making the vote history for this section useless for training or ranking. A fix: pick one meme per day (deterministically, like the AI insight's `insight-YYYY-MM-DD` id) so repeat votes on the same day's meme are meaningful, or maintain a rotating pool of memes voted on across users to build real per-item signal.
+- **Meme voting now produces a usable signal.** `getDailyMemes()` fetches 3 memes from meme-api.com once per day and persists them in a `daily_memes` table, so every user sees the same 3 memes and votes accumulate per item across the day rather than resetting on every load or server restart.
 
 ## Known limitations
 

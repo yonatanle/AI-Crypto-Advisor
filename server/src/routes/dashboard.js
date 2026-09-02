@@ -4,7 +4,7 @@ const { requireAuth } = require("../middleware/auth");
 const { getCoinPrices } = require("../services/coingecko");
 const { getMarketNews } = require("../services/news");
 const { getAiInsight } = require("../services/aiInsight");
-const { getRandomMeme } = require("../services/memes");
+const { getDailyMemes } = require("../services/memes");
 const { SECTIONS } = require("../constants");
 
 const router = express.Router();
@@ -29,11 +29,11 @@ router.get("/", requireAuth, async (req, res) => {
     contentTypes: JSON.parse(prefRow.content_types),
   };
 
-  const [news, prices, insight, meme] = await Promise.all([
+  const [news, prices, insight, memes] = await Promise.all([
     getMarketNews(preferences.assets),
     getCoinPrices(preferences.assets),
     getAiInsight(preferences),
-    getRandomMeme(),
+    getDailyMemes(),
   ]);
 
   // Dated id (not a UUID per call) so repeat votes on today's insight land
@@ -46,7 +46,7 @@ router.get("/", requireAuth, async (req, res) => {
       marketNews: attachVotes(req.user.id, SECTIONS.MARKET_NEWS, news),
       coinPrices: attachVotes(req.user.id, SECTIONS.COIN_PRICES, prices.map((p) => ({ id: p.id, ...p }))),
       aiInsight: attachVotes(req.user.id, SECTIONS.AI_INSIGHT, [insightItem])[0],
-      meme: attachVotes(req.user.id, SECTIONS.MEME, [meme])[0],
+      meme: attachVotes(req.user.id, SECTIONS.MEME, memes),
     },
   });
 });

@@ -38,6 +38,17 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE(user_id, section, item_key)
   );
+
+  -- Persists the day's meme picks so every user sees the same 3 memes and
+  -- votes accumulate per item instead of resetting on every server restart.
+  CREATE TABLE IF NOT EXISTS daily_memes (
+    day TEXT NOT NULL,
+    idx INTEGER NOT NULL,
+    id TEXT NOT NULL,
+    url TEXT NOT NULL,
+    caption TEXT NOT NULL,
+    PRIMARY KEY (day, idx)
+  );
 `);
 
 module.exports = db;
