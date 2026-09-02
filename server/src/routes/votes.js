@@ -7,9 +7,17 @@ const router = express.Router();
 
 router.post("/", requireAuth, (req, res) => {
   const { section, itemKey, vote } = req.body || {};
-  if (!VALID_SECTIONS.has(section) || !itemKey || ![1, -1].includes(vote)) {
+  if (
+    !VALID_SECTIONS.has(section) ||
+    typeof itemKey !== "string" ||
+    itemKey.length < 1 ||
+    itemKey.length > 200 ||
+    ![1, -1].includes(vote)
+  ) {
     return res.status(400).json({
-      error: `section (one of ${Object.values(SECTIONS).join("/")}), itemKey, and vote (1 or -1) are required`,
+      error: `section (one of ${Object.values(SECTIONS).join(
+        "/"
+      )}), itemKey (1-200 chars), and vote (1 or -1) are required`,
     });
   }
 

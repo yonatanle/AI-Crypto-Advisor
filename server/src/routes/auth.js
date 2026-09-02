@@ -5,6 +5,8 @@ const db = require("../db");
 
 const router = express.Router();
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function signToken(user) {
   return jwt.sign(
     { sub: user.id, email: user.email, name: user.name },
@@ -17,6 +19,12 @@ router.post("/register", async (req, res) => {
   const { email, name, password } = req.body || {};
   if (!email || !name || !password) {
     return res.status(400).json({ error: "email, name and password are required" });
+  }
+  if (!EMAIL_RE.test(email)) {
+    return res.status(400).json({ error: "Invalid email address" });
+  }
+  if (name.length < 1 || name.length > 100) {
+    return res.status(400).json({ error: "Name must be between 1 and 100 characters" });
   }
   if (password.length < 6) {
     return res.status(400).json({ error: "Password must be at least 6 characters" });
