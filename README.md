@@ -109,8 +109,8 @@ Tables: `users`, `preferences`, `votes`, `daily_memes`.
 - **Frontend:** deploy `client/` to Vercel or Netlify. Set `VITE_API_URL` to the deployed backend URL.
 - **Backend + DB:** deploy `server/` to Render (or Railway/Glitch). Attach a Postgres instance and set `DATABASE_URL` to its connection string, plus `JWT_SECRET` and optionally `OPENROUTER_API_KEY` / `NEWSDATA_API_KEY`. Note: Render's free Postgres expires 30 days after creation (14-day grace period before deletion) — fine for a graded assignment reviewed within that window, but not a permanent free tier.
 
-Deployed app URL: _TODO after deployment_
-GitHub repo: _TODO_
+Deployed app URL: https://ai-crypto-advisor-app.vercel.app
+GitHub repo: https://github.com/yonatanle/AI-Crypto-Advisor
 
 ## Bonus: feedback → model improvement (design suggestion, not implemented)
 
