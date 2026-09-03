@@ -102,7 +102,51 @@ select * from daily_memes;
 
 (or `docker exec -it moveo-postgres psql -U postgres -d moveo` if using the Docker command above)
 
-Tables: `users`, `preferences`, `votes`, `daily_memes`.
+### Schema
+
+**`users`**
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `SERIAL PRIMARY KEY` | |
+| `email` | `TEXT UNIQUE NOT NULL` | lowercased before insert |
+| `name` | `TEXT NOT NULL` | |
+| `password_hash` | `TEXT NOT NULL` | bcrypt |
+| `created_at` | `TIMESTAMPTZ NOT NULL DEFAULT now()` | |
+
+**`preferences`** — one row per user, from the onboarding quiz
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `SERIAL PRIMARY KEY` | |
+| `user_id` | `INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE` | |
+| `assets` | `TEXT NOT NULL` | JSON-encoded array, e.g. `["BTC","ETH"]` |
+| `investor_type` | `TEXT NOT NULL` | e.g. `"HODLer"` |
+| `content_types` | `TEXT NOT NULL` | JSON-encoded array, e.g. `["Market News"]` |
+| `created_at` / `updated_at` | `TIMESTAMPTZ NOT NULL DEFAULT now()` | |
+
+**`votes`** — one row per (user, dashboard item); re-voting updates in place
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `SERIAL PRIMARY KEY` | |
+| `user_id` | `INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE` | |
+| `section` | `TEXT NOT NULL` | one of `marketNews` / `coinPrices` / `aiInsight` / `meme` |
+| `item_key` | `TEXT NOT NULL` | identifies the voted item within its section |
+| `vote` | `INTEGER NOT NULL` | `1` or `-1` |
+| `created_at` | `TIMESTAMPTZ NOT NULL DEFAULT now()` | updated on re-vote |
+| | | `UNIQUE(user_id, section, item_key)` |
+
+**`daily_memes`** — the day's shared meme pool (see [Possible improvements](#possible-improvements))
+
+| Column | Type | Notes |
+|---|---|---|
+| `day` | `TEXT NOT NULL` | `YYYY-MM-DD` |
+| `idx` | `INTEGER NOT NULL` | position within the day's pool (0-2) |
+| `id` | `TEXT NOT NULL` | meme's unique id (Reddit post link, or a static fallback id) |
+| `url` | `TEXT NOT NULL` | image URL |
+| `caption` | `TEXT NOT NULL` | |
+| | | `PRIMARY KEY (day, idx)` |
 
 ## Deployment
 
