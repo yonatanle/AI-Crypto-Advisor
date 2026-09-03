@@ -39,6 +39,13 @@ npm install
 npm run dev              # http://localhost:5173
 ```
 
+### Running tests
+
+```bash
+cd server
+npm test
+```
+
 Open `http://localhost:5173`, register an account, complete onboarding, and view the dashboard.
 
 ## Environment variables
@@ -112,7 +119,7 @@ The `votes` table already captures `(user_id, section, item_key, vote, created_a
 
 Deliberate scope cuts for an assignment of this size — called out explicitly rather than left implicit:
 
-- **No automated tests.** Correctness was verified manually (curl against every endpoint, a full register→onboarding→dashboard→vote browser run, a production frontend build) rather than with an automated suite. For a longer-lived project this should be backed by integration tests for the auth/preferences/dashboard/votes routes.
+- **Partial automated test coverage.** `server/test/` (run via `npm test` in `server/`) covers the auth routes (validation, duplicate email, login success/failure) and the votes route (validation, the upsert-in-place behavior) as integration tests against a real temp SQLite file — no mocking. `preferences` and `dashboard` remain untested since `dashboard` calls out to live third-party APIs (CoinGecko/NewsData.io/OpenRouter/meme-api.com) that would need mocking to test reliably; correctness there was verified manually (curl against every endpoint, a full register→onboarding→dashboard→vote browser run, a production frontend build).
 - **No CI or containerization.** No GitHub Actions workflow, no Dockerfile. Nothing currently gates a broken commit before it reaches `main`.
 - **Deployment is prose-only.** The README describes deploying to Vercel/Render but the repo has no `vercel.json`, `render.yaml`, or platform-specific build config committed yet — deployment hasn't been executed.
 - **No DB migrations.** The schema is created via `CREATE TABLE IF NOT EXISTS` in `server/src/db/index.js` at startup. Fine at 3 tables and this scale, but any future schema change (e.g. adding a column) has no migration path and would need to be handled manually.

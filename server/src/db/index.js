@@ -2,10 +2,13 @@ const path = require("path");
 const fs = require("fs");
 const Database = require("better-sqlite3");
 
-const dataDir = path.join(__dirname, "..", "..", "data");
+// DB_PATH override lets tests point at a temp/in-memory file instead of the
+// real app database.
+const dbPath = process.env.DB_PATH || path.join(__dirname, "..", "..", "data", "app.sqlite");
+const dataDir = path.dirname(dbPath);
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
-const db = new Database(path.join(dataDir, "app.sqlite"));
+const db = new Database(dbPath);
 
 db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");
