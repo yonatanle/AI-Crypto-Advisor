@@ -2,7 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { startTestApp } = require("./support/helpers");
 
-const { ready, teardown } = startTestApp("tmp-auth.sqlite");
+const { ready, teardown } = startTestApp("moveo_test_auth");
 
 function register(baseUrl, body) {
   return fetch(`${baseUrl}/api/auth/register`, {

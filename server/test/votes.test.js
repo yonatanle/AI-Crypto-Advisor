@@ -2,7 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { startTestApp } = require("./support/helpers");
 
-const { ready, teardown } = startTestApp("tmp-votes.sqlite");
+const { ready, teardown } = startTestApp("moveo_test_votes");
 
 test("votes routes", async (t) => {
   const baseUrl = await ready;
@@ -65,9 +65,10 @@ test("votes routes", async (t) => {
       assert.equal(res.status, 200);
 
       const db = require("../src/db");
-      const rows = db
-        .prepare("SELECT vote FROM votes v JOIN users u ON u.id = v.user_id WHERE u.email = ? AND item_key = ?")
-        .all("voter@test.com", "meme-toggle");
+      const { rows } = await db.query(
+        "SELECT vote FROM votes v JOIN users u ON u.id = v.user_id WHERE u.email = $1 AND item_key = $2",
+        ["voter@test.com", "meme-toggle"]
+      );
       assert.equal(rows.length, 1);
       assert.equal(rows[0].vote, -1);
     });

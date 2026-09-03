@@ -5,7 +5,7 @@ const { SECTIONS, VALID_SECTIONS } = require("../constants");
 
 const router = express.Router();
 
-router.post("/", requireAuth, (req, res) => {
+router.post("/", requireAuth, async (req, res) => {
   const { section, itemKey, vote } = req.body || {};
   if (
     !VALID_SECTIONS.has(section) ||
@@ -23,10 +23,11 @@ router.post("/", requireAuth, (req, res) => {
 
   // One vote per (user, section, item): re-voting on the same item updates
   // it in place instead of piling up duplicate rows.
-  db.prepare(
-    `INSERT INTO votes (user_id, section, item_key, vote) VALUES (?, ?, ?, ?)
-     ON CONFLICT(user_id, section, item_key) DO UPDATE SET vote = excluded.vote, created_at = datetime('now')`
-  ).run(req.user.id, section, itemKey, vote);
+  await db.query(
+    `INSERT INTO votes (user_id, section, item_key, vote) VALUES ($1, $2, $3, $4)
+     ON CONFLICT (user_id, section, item_key) DO UPDATE SET vote = excluded.vote, created_at = now()`,
+    [req.user.id, section, itemKey, vote]
+  );
 
   res.json({ ok: true });
 });

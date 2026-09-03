@@ -9,16 +9,18 @@ const { SECTIONS } = require("../constants");
 
 const router = express.Router();
 
-function attachVotes(userId, section, items) {
-  const rows = db
-    .prepare("SELECT item_key, vote FROM votes WHERE user_id = ? AND section = ?")
-    .all(userId, section);
+async function attachVotes(userId, section, items) {
+  const { rows } = await db.query("SELECT item_key, vote FROM votes WHERE user_id = $1 AND section = $2", [
+    userId,
+    section,
+  ]);
   const voteMap = Object.fromEntries(rows.map((r) => [r.item_key, r.vote]));
   return items.map((item) => ({ ...item, userVote: voteMap[item.id] ?? null }));
 }
 
 router.get("/", requireAuth, async (req, res) => {
-  const prefRow = db.prepare("SELECT * FROM preferences WHERE user_id = ?").get(req.user.id);
+  const { rows: prefRows } = await db.query("SELECT * FROM preferences WHERE user_id = $1", [req.user.id]);
+  const prefRow = prefRows[0];
   if (!prefRow) {
     return res.status(400).json({ error: "Onboarding not completed" });
   }
@@ -45,13 +47,20 @@ router.get("/", requireAuth, async (req, res) => {
   // The pool itself is still shared/persisted so repeat picks can accumulate votes.
   const meme = memes[Math.floor(Math.random() * memes.length)];
 
+  const [marketNews, coinPrices, aiInsightVoted, memeVoted] = await Promise.all([
+    attachVotes(req.user.id, SECTIONS.MARKET_NEWS, news),
+    attachVotes(req.user.id, SECTIONS.COIN_PRICES, prices.map((p) => ({ id: p.id, ...p }))),
+    attachVotes(req.user.id, SECTIONS.AI_INSIGHT, [insightItem]),
+    attachVotes(req.user.id, SECTIONS.MEME, [meme]),
+  ]);
+
   res.json({
     preferences,
     sections: {
-      marketNews: attachVotes(req.user.id, SECTIONS.MARKET_NEWS, news),
-      coinPrices: attachVotes(req.user.id, SECTIONS.COIN_PRICES, prices.map((p) => ({ id: p.id, ...p }))),
-      aiInsight: attachVotes(req.user.id, SECTIONS.AI_INSIGHT, [insightItem])[0],
-      meme: attachVotes(req.user.id, SECTIONS.MEME, [meme])[0],
+      marketNews,
+      coinPrices,
+      aiInsight: aiInsightVoted[0],
+      meme: memeVoted[0],
     },
   });
 });

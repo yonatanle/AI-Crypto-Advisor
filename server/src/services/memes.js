@@ -61,12 +61,15 @@ async function fetchLiveMemeSet() {
   }));
 }
 
-// Persists the day's meme picks in SQLite (rather than in-memory) so every
+// Persists the day's meme picks in Postgres (rather than in-memory) so every
 // user sees the same set and votes stay meaningful across server restarts.
 async function getDailyMemes() {
   const day = new Date().toISOString().slice(0, 10);
 
-  const existing = db.prepare("SELECT idx, id, url, caption FROM daily_memes WHERE day = ? ORDER BY idx").all(day);
+  const { rows: existing } = await db.query(
+    "SELECT idx, id, url, caption FROM daily_memes WHERE day = $1 ORDER BY idx",
+    [day]
+  );
   if (existing.length) return existing.map(({ id, url, caption }) => ({ id, url, caption }));
 
   let memes;
@@ -77,11 +80,17 @@ async function getDailyMemes() {
     memes = getStaticDailyMemeSet();
   }
 
-  const insert = db.prepare("INSERT OR IGNORE INTO daily_memes (day, idx, id, url, caption) VALUES (?, ?, ?, ?, ?)");
-  const insertAll = db.transaction((items) => {
-    items.forEach((m, idx) => insert.run(day, idx, m.id, m.url, m.caption));
-  });
-  insertAll(memes);
+  // ON CONFLICT DO NOTHING guards against a race if two requests both miss
+  // the cache for a new day and try to seed it concurrently.
+  await Promise.all(
+    memes.map((m, idx) =>
+      db.query(
+        `INSERT INTO daily_memes (day, idx, id, url, caption) VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (day, idx) DO NOTHING`,
+        [day, idx, m.id, m.url, m.caption]
+      )
+    )
+  );
 
   return memes;
 }

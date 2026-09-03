@@ -1,57 +1,58 @@
-const path = require("path");
-const fs = require("fs");
-const Database = require("better-sqlite3");
+const { Pool } = require("pg");
 
-// DB_PATH override lets tests point at a temp/in-memory file instead of the
-// real app database.
-const dbPath = process.env.DB_PATH || path.join(__dirname, "..", "..", "data", "app.sqlite");
-const dataDir = path.dirname(dbPath);
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+// DATABASE_URL is provided by Render/Railway/etc in production; falls back to
+// local dev/test values so `npm run dev` and `npm test` work out of the box.
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || "postgres://postgres:devpassword@localhost:5437/moveo",
+});
 
-const db = new Database(dbPath);
+async function init() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
 
-db.pragma("journal_mode = WAL");
-db.pragma("foreign_keys = ON");
+    CREATE TABLE IF NOT EXISTS preferences (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+      assets TEXT NOT NULL,
+      investor_type TEXT NOT NULL,
+      content_types TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT UNIQUE NOT NULL,
-    name TEXT NOT NULL,
-    password_hash TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
+    CREATE TABLE IF NOT EXISTS votes (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      section TEXT NOT NULL,
+      item_key TEXT NOT NULL,
+      vote INTEGER NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE(user_id, section, item_key)
+    );
 
-  CREATE TABLE IF NOT EXISTS preferences (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-    assets TEXT NOT NULL,
-    investor_type TEXT NOT NULL,
-    content_types TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
+    -- Persists the day's meme picks so every user sees the same 3 memes and
+    -- votes accumulate per item instead of resetting on every server restart.
+    CREATE TABLE IF NOT EXISTS daily_memes (
+      day TEXT NOT NULL,
+      idx INTEGER NOT NULL,
+      id TEXT NOT NULL,
+      url TEXT NOT NULL,
+      caption TEXT NOT NULL,
+      PRIMARY KEY (day, idx)
+    );
+  `);
+}
 
-  CREATE TABLE IF NOT EXISTS votes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    section TEXT NOT NULL,
-    item_key TEXT NOT NULL,
-    vote INTEGER NOT NULL,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    UNIQUE(user_id, section, item_key)
-  );
+const ready = init();
 
-  -- Persists the day's meme picks so every user sees the same 3 memes and
-  -- votes accumulate per item instead of resetting on every server restart.
-  CREATE TABLE IF NOT EXISTS daily_memes (
-    day TEXT NOT NULL,
-    idx INTEGER NOT NULL,
-    id TEXT NOT NULL,
-    url TEXT NOT NULL,
-    caption TEXT NOT NULL,
-    PRIMARY KEY (day, idx)
-  );
-`);
-
-module.exports = db;
+module.exports = {
+  query: (text, params) => pool.query(text, params),
+  ready,
+  close: () => pool.end(),
+};

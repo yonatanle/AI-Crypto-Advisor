@@ -30,15 +30,16 @@ router.post("/register", async (req, res) => {
     return res.status(400).json({ error: "Password must be at least 6 characters" });
   }
 
-  const existing = db.prepare("SELECT id FROM users WHERE email = ?").get(email.toLowerCase());
-  if (existing) return res.status(409).json({ error: "Email already registered" });
+  const { rows: existingRows } = await db.query("SELECT id FROM users WHERE email = $1", [email.toLowerCase()]);
+  if (existingRows.length) return res.status(409).json({ error: "Email already registered" });
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const result = db
-    .prepare("INSERT INTO users (email, name, password_hash) VALUES (?, ?, ?)")
-    .run(email.toLowerCase(), name, passwordHash);
+  const { rows } = await db.query(
+    "INSERT INTO users (email, name, password_hash) VALUES ($1, $2, $3) RETURNING id",
+    [email.toLowerCase(), name, passwordHash]
+  );
 
-  const user = { id: result.lastInsertRowid, email: email.toLowerCase(), name };
+  const user = { id: rows[0].id, email: email.toLowerCase(), name };
   const token = signToken(user);
   res.status(201).json({ token, user });
 });
@@ -49,7 +50,8 @@ router.post("/login", async (req, res) => {
     return res.status(400).json({ error: "email and password are required" });
   }
 
-  const row = db.prepare("SELECT * FROM users WHERE email = ?").get(email.toLowerCase());
+  const { rows } = await db.query("SELECT * FROM users WHERE email = $1", [email.toLowerCase()]);
+  const row = rows[0];
   if (!row) return res.status(401).json({ error: "Invalid credentials" });
 
   const valid = await bcrypt.compare(password, row.password_hash);

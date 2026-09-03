@@ -8,14 +8,14 @@ Built for the Moveo coding assignment.
 
 - **Frontend:** React (Vite) + React Router
 - **Backend:** Node.js + Express
-- **Database:** SQLite (via `better-sqlite3`)
+- **Database:** PostgreSQL (via `pg`)
 - **Auth:** JWT (email + password, bcrypt-hashed)
 - **External APIs:** CoinGecko (prices, free, no key needed), NewsData.io (news, free tier, optional key — CryptoPanic was considered but its API is not free), OpenRouter (AI insight, free tier, optional key), meme-api.com (memes, free, no key needed — pulls from crypto meme subreddits)
 
 ## Project structure
 
 ```
-server/   Express API + SQLite DB
+server/   Express API + PostgreSQL DB
 client/   React frontend (Vite)
 ```
 
@@ -23,12 +23,22 @@ client/   React frontend (Vite)
 
 ### 1. Backend
 
+Needs a running PostgreSQL instance. Locally, the easiest way is Docker:
+
+```bash
+docker run -d --name moveo-postgres -e POSTGRES_PASSWORD=devpassword -e POSTGRES_DB=moveo -p 5437:5432 postgres:16
+```
+
+Then:
+
 ```bash
 cd server
-cp .env.example .env   # fill in JWT_SECRET (required) and API keys (optional)
+cp .env.example .env   # fill in DATABASE_URL, JWT_SECRET (required) and API keys (optional)
 npm install
 npm run dev             # http://localhost:4000
 ```
+
+Tables are created automatically on startup (`CREATE TABLE IF NOT EXISTS`) — no separate migration step.
 
 ### 2. Frontend
 
@@ -55,6 +65,7 @@ Open `http://localhost:5173`, register an account, complete onboarding, and view
 | Variable | Required | Description |
 |---|---|---|
 | `PORT` | no | API port, defaults to 4000 |
+| `DATABASE_URL` | no | Postgres connection string. Defaults to `postgres://postgres:devpassword@localhost:5437/moveo` (matches the local Docker command above). Render/Railway provide this automatically when you attach a Postgres instance. |
 | `JWT_SECRET` | yes | Secret used to sign JWTs |
 | `OPENROUTER_API_KEY` | no | Free key from [openrouter.ai](https://openrouter.ai) for real AI-generated insights. Without it, a templated fallback insight is used. |
 | `NEWSDATA_API_KEY` | no | Free key from [newsdata.io](https://newsdata.io) (200 credits/day free, no credit card) for live crypto news via their `/api/1/crypto` endpoint. Without it, a static fallback news list is used. |
@@ -78,23 +89,25 @@ CryptoPanic (the API suggested in the assignment) does not offer a free tier, so
 
 ## Database access
 
-SQLite file lives at `server/data/app.sqlite` (created automatically on first run). Inspect it with:
+Inspect the local Postgres instance with:
 
 ```bash
-sqlite3 server/data/app.sqlite
-.tables
+psql "$DATABASE_URL"
+\dt
 select * from users;
 select * from preferences;
 select * from votes;
 select * from daily_memes;
 ```
 
+(or `docker exec -it moveo-postgres psql -U postgres -d moveo` if using the Docker command above)
+
 Tables: `users`, `preferences`, `votes`, `daily_memes`.
 
 ## Deployment
 
 - **Frontend:** deploy `client/` to Vercel or Netlify. Set `VITE_API_URL` to the deployed backend URL.
-- **Backend:** deploy `server/` to Render or Railway. Set `JWT_SECRET` and optionally `OPENROUTER_API_KEY` / `NEWSDATA_API_KEY` as environment variables. Note: SQLite persists to local disk — on Render use a persistent disk, or swap in Postgres for production durability.
+- **Backend + DB:** deploy `server/` to Render (or Railway/Glitch). Attach a Postgres instance and set `DATABASE_URL` to its connection string, plus `JWT_SECRET` and optionally `OPENROUTER_API_KEY` / `NEWSDATA_API_KEY`. Note: Render's free Postgres expires 30 days after creation (14-day grace period before deletion) — fine for a graded assignment reviewed within that window, but not a permanent free tier.
 
 Deployed app URL: _TODO after deployment_
 GitHub repo: _TODO_
@@ -119,7 +132,7 @@ The `votes` table already captures `(user_id, section, item_key, vote, created_a
 
 Deliberate scope cuts for an assignment of this size — called out explicitly rather than left implicit:
 
-- **Partial automated test coverage.** `server/test/` (run via `npm test` in `server/`) covers the auth routes (validation, duplicate email, login success/failure) and the votes route (validation, the upsert-in-place behavior) as integration tests against a real temp SQLite file — no mocking. `preferences` and `dashboard` remain untested since `dashboard` calls out to live third-party APIs (CoinGecko/NewsData.io/OpenRouter/meme-api.com) that would need mocking to test reliably; correctness there was verified manually (curl against every endpoint, a full register→onboarding→dashboard→vote browser run, a production frontend build).
+- **Partial automated test coverage.** `server/test/` (run via `npm test` in `server/`) covers the auth routes (validation, duplicate email, login success/failure) and the votes route (validation, the upsert-in-place behavior) as integration tests against a real throwaway Postgres database (created and dropped per test file) — no mocking. `preferences` and `dashboard` remain untested since `dashboard` calls out to live third-party APIs (CoinGecko/NewsData.io/OpenRouter/meme-api.com) that would need mocking to test reliably; correctness there was verified manually (curl against every endpoint, a full register→onboarding→dashboard→vote browser run, a production frontend build).
 - **No CI or containerization.** No GitHub Actions workflow, no Dockerfile. Nothing currently gates a broken commit before it reaches `main`.
 - **Deployment is prose-only.** The README describes deploying to Vercel/Render but the repo has no `vercel.json`, `render.yaml`, or platform-specific build config committed yet — deployment hasn't been executed.
 - **No DB migrations.** The schema is created via `CREATE TABLE IF NOT EXISTS` in `server/src/db/index.js` at startup. Fine at 3 tables and this scale, but any future schema change (e.g. adding a column) has no migration path and would need to be handled manually.
@@ -136,3 +149,4 @@ This project was built with Claude Code (Anthropic's CLI coding agent). Summary 
 - Claude ran the backend and frontend locally, smoke-tested every API endpoint via curl (register, login, preferences, dashboard, voting) and verified a clean production build of the frontend.
 - Lower-level implementation details (fallback behavior, DB schema, route design) were made by Claude within constraints set by the user, who reviewed and steered scope via direct questions rather than reviewing code line-by-line during generation.
 - Several material, user-driven decisions shaped the project directly: the user rejected CryptoPanic as a news source once it was confirmed not free, evaluated alternatives Claude proposed (CoinMarketCap, freecryptoapi.com) and rejected both on verified pricing grounds, and picked NewsData.io as the replacement; and the user chose meme-api.com over Claude's suggested static-only approach for live meme content, after also evaluating and rejecting Apify as disproportionate for the use case. The OpenRouter free-model fix (switching from a deprecated pinned model ID to the auto-routing free endpoint) was diagnosed and applied by Claude, at the user's direction to investigate why AI Insight was falling back to templated text.
+- Later in the project, the user asked about deployment options and the DB persistence tradeoffs of SQLite on free-tier hosts (Render's free web services have no persistent disk). After researching Render's actual free-tier terms together (web service free indefinitely with a 15-minute sleep; free Postgres expires 30 days after creation), the user directed a migration from SQLite to PostgreSQL so the deployed DB would be independently accessible and durable for the grading window — Claude carried out the migration (swapping `better-sqlite3` for `pg`, converting all query call sites to async, updating the test suite to run against a throwaway Postgres database per test file).
