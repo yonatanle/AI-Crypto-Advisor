@@ -1,9 +1,18 @@
 const { Pool } = require("pg");
 
-// DATABASE_URL is provided by Render/Railway/etc in production; falls back to
-// local dev/test values so `npm run dev` and `npm test` work out of the box.
+const connectionString =
+  process.env.DATABASE_URL || "postgres://postgres:devpassword@localhost:5437/moveo";
+
+// Hosted Postgres (Render, etc.) requires SSL and uses a self-signed cert
+// chain, so verification is disabled rather than left on to fail; local
+// Docker Postgres (dev and tests both point at localhost) has no SSL
+// configured at all, so it's detected by host instead of by DATABASE_URL
+// being set (tests set DATABASE_URL too, but still point at localhost).
+const isLocal = /localhost|127\.0\.0\.1/.test(connectionString);
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || "postgres://postgres:devpassword@localhost:5437/moveo",
+  connectionString,
+  ssl: isLocal ? false : { rejectUnauthorized: false },
 });
 
 async function init() {
