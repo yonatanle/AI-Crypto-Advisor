@@ -27,7 +27,7 @@ export function Login() {
   return (
     <div className="auth-page">
       <form className="auth-card" onSubmit={handleSubmit}>
-        <h1>Welcome back</h1>
+        <h1>Log in</h1>
         <p className="subtitle">Log in to your AI Crypto Advisor</p>
 
         <label>Email</label>
